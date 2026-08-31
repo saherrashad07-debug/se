@@ -64,9 +64,7 @@
 </div>
 
 <script>
-    // ==========================================
-    // لينك جوجل شيت بتاعك (متغيره خالص)
-    // ==========================================
+    // لينك جوجل شيت بتاعك
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfQ14ZP-3dspsT4fhN9A9KxomvRUZbm6SVKkJ-tX8Jy-aqjABgTTFnSxLRSCqeQaM/exec";
 
     window.onload = () => {
@@ -82,21 +80,16 @@
         }
     };
 
-    // جلب البيانات من الإكسل
     async function getVisits() {
         try {
             const res = await fetch(GOOGLE_SCRIPT_URL);
             if(!res.ok) return [];
             return await res.json();
         } catch (e) {
-            console.error("Error fetching data", e);
             return [];
         }
     }
 
-    // ==========================================
-    // أكشن المندوب
-    // ==========================================
     async function submitVisit() {
         const btn = document.getElementById('submitBtn');
         const status = document.getElementById('statusMsg');
@@ -108,16 +101,19 @@
         btn.innerText = "جاري تحديد الموقع...";
         status.innerHTML = "";
 
+        // طلب الموقع مع timeout سريع (8 ثواني)
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 await sendRepData(position.coords.latitude, position.coords.longitude, repName);
-                resetBtn(btn, status);
+                resetBtn(btn);
             },
             async (error) => {
+                // لو حصل أي مشكلة في الـ GPS
+                status.innerHTML = "<span class='error'>تعذر تحديد الموقع، جاري الحفظ بدون موقع...</span>";
                 await sendRepData(null, null, repName);
-                resetBtn(btn, status);
+                resetBtn(btn);
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );
     }
 
@@ -137,33 +133,36 @@
 
         localStorage.setItem('repName', repName);
 
-        // إرسال البيانات لجوجل شيت
-        await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(newVisit)
-        });
-        
-        // مسح الخانات بعد الحفظ
-        document.getElementById('placeName').value = '';
-        document.getElementById('doctorName').value = '';
-        document.getElementById('phone').value = '';
-        document.getElementById('address').value = '';
-        document.getElementById('notes').value = '';
-        
-        document.getElementById('statusMsg').innerHTML = "<span class='success'>✅ تم حفظ الزيارة في الإكسل بنجاح!</span>";
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                redirect: 'follow', // بيمنع التعليق في الموبايل
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8', // بيمنع أخطاء الكورس
+                },
+                body: JSON.stringify(newVisit)
+            });
+            
+            document.getElementById('placeName').value = '';
+            document.getElementById('doctorName').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('address').value = '';
+            document.getElementById('notes').value = '';
+            
+            document.getElementById('statusMsg').innerHTML = "<span class='success'>✅ تم حفظ الزيارة بنجاح!</span>";
+        } catch (e) {
+            document.getElementById('statusMsg').innerHTML = "<span class='error'>حدث خطأ في الاتصال، حاول مرة أخرى.</span>";
+        }
     }
 
-    function resetBtn(btn, status) {
+    function resetBtn(btn) {
         btn.disabled = false;
         btn.innerText = "📍 حفظ الزيارة";
     }
 
-    // ==========================================
-    // أكشن المدير
-    // ==========================================
     async function loadVisits() {
         const container = document.getElementById('visitsList');
-        container.innerHTML = "<p style='text-align:center'>جاري تحميل البيانات من الإكسل...</p>";
+        container.innerHTML = "<p style='text-align:center'>جاري تحميل البيانات...</p>";
         
         const visits = await getVisits();
         
@@ -174,7 +173,6 @@
 
         container.innerHTML = "";
         
-        // الأعمدة في الإكسل بالعربي، فهنستخدم أسمائهم في العرض
         visits.forEach(v => {
             let mapLink = '';
             if(v['رابط الموقع'] && v['رابط الموقع'] !== "") {
