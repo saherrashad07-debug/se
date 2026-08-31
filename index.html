@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام متابعة المندوبين</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #f0f2f5; margin: 0; padding: 15px; }
+        .container { max-width: 500px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { text-align: center; color: #1a73e8; margin-top: 0; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #1557b0; }
+        button:disabled { background: #ccc; }
+        
+        /* تنسيق صفحة المدير */
+        .admin-container { max-width: 800px; }
+        .header { background: #1a73e8; color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
+        .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-right: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .time { font-size: 12px; color: #888; display: block; margin-bottom: 5px; }
+        .place-name { font-size: 18px; font-weight: bold; color: #333; margin: 5px 0; }
+        .details { color: #555; line-height: 1.8; font-size: 14px; }
+        .map-btn { display: inline-block; margin-top: 10px; padding: 6px 12px; background: #ea4335; color: white; text-decoration: none; border-radius: 5px; font-size: 13px; }
+        .hidden { display: none; }
+        #statusMsg { text-align: center; margin-top: 15px; font-weight: bold; }
+        .success { color: #0f9d58; }
+        .error { color: #ea4335; }
+    </style>
+</head>
+<body>
+
+<!-- ================= شاشة المندوب ================= -->
+<div id="repView" class="container">
+    <h2>تسجيل زيارة جديدة</h2>
+    
+    <input type="text" id="repName" placeholder="اسمك (مثال: أحمد محمود)">
+    
+    <select id="placeType">
+        <option value="عيادة">عيادة</option>
+        <option value="صيدلية">صيدلية</option>
+        <option value="مركز تجميل">مركز تجميل</option>
+        <option value="مستشفى">مستشفى</option>
+    </select>
+
+    <input type="text" id="placeName" placeholder="اسم المكان (مثال: عيادة دكتور أحمد)" required>
+    <input type="text" id="doctorName" placeholder="اسم الدكتور / المسؤول" required>
+    <input type="tel" id="phone" placeholder="رقم الموبايل">
+    <input type="text" id="address" placeholder="العنوان">
+    
+    <textarea id="notes" rows="4" placeholder="ماذا تم عمله مع العميل؟"></textarea>
+
+    <button id="submitBtn" onclick="submitVisit()">📍 حفظ الزيارة</button>
+    <div id="statusMsg"></div>
+</div>
+
+<!-- ================= شاشة المدير ================= -->
+<div id="adminView" class="container admin-container hidden">
+    <div class="header">
+        <h2 style="margin:0; color:white;">لوحة تحكم المدير</h2>
+        <button onclick="loadVisits()" style="width:auto; margin-top:15px; background:white; color:#1a73e8;">تحديث البيانات</button>
+    </div>
+    <div id="visitsList"></div>
+</div>
+
+<script>
+    // ==========================================
+    // إعدادات قاعدة البيانات (Pantry Cloud)
+    // لو عملت الخطوة الأولى، بدل الـ ID ده بـ ID بتاعك
+    // لو مش عاملها، ده ID تجريبي هيشغل معاك الموقع وتقدر تجرب عليه
+    // ==========================================
+    const PANTRY_ID = "demo_pantry_id_123"; 
+    const BASKET_NAME = "sales_visits_2024";
+    const PANTRY_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/${BASKET_NAME}`;
+
+    // تحديد أي واجهة تظهر بناءً على اللينك
+    window.onload = () => {
+        if (window.location.hash === '#admin') {
+            document.getElementById('repView').classList.add('hidden');
+            document.getElementById('adminView').classList.remove('hidden');
+            loadVisits();
+        } else {
+            document.getElementById('repView').classList.remove('hidden');
+            document.getElementById('adminView').classList.add('hidden');
+            // حفظ اسم المندوب لو دخل قبل كده
+            const savedName = localStorage.getItem('repName');
+            if(savedName) document.getElementById('repName').value = savedName;
+        }
+    };
+
+    // جلب البيانات من السيرفر
+    async function getVisits() {
+        try {
+            const res = await fetch(PANTTRY_URL);
+            if(!res.ok) return [];
+            const data = await res.json();
+            return data.visits || [];
+        } catch (e) {
+            console.error("Error fetching data", e);
+            return [];
+        }
+    }
+
+    // حفظ البيانات في السيرفر
+    async function saveVisits(visitsArray) {
+        await fetch(PANTRY_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ visits: visitsArray })
+        });
+    }
+
+    // ==========================================
+    // أكشن المندوب (إرسال الزيارة)
+    // ==========================================
+    async function submitVisit() {
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('statusMsg');
+        const repName = document.getElementById('repName').value;
+        
+        if(!repName) { status.innerHTML = "<span class='error'>من فضلك اكتب اسمك أولاً</span>"; return; }
+
+        btn.disabled = true;
+        btn.innerText = "جاري تحديد الموقع...";
+        status.innerHTML = "";
+
+        // أخذ الـ GPS الخفي
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                await sendRepData(position.coords.latitude, position.coords.longitude, repName);
+                resetBtn(btn, status);
+            },
+            async (error) => {
+                await sendRepData(null, null, repName);
+                resetBtn(btn, status);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }
+
+    async function sendRepData(lat, lng, repName) {
+        const newVisit = {
+            id: Date.now(),
+            time: new Date().toLocaleString('ar-EG'),
+            rep: repName,
+            place_type: document.getElementById('placeType').value,
+            place_name: document.getElementById('placeName').value,
+            doctor_name: document.getElementById('doctorName').value,
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('address').value,
+            notes: document.getElementById('notes').value,
+            lat: lat,
+            lng: lng
+        };
+
+        // حفظ اسم المندوب للمرة الجاية
+        localStorage.setItem('repName', repName);
+
+        let allVisits = await getVisits();
+        allVisits.unshift(newVisit); // ضيف الزيارة الجديدة في الأول
+        await saveVisits(allVisits);
+        
+        // مسح الخانات
+        document.getElementById('placeName').value = '';
+        document.getElementById('doctorName').value = '';
+        document.getElementById('phone').value = '';
+        document.getElementById('address').value = '';
+        document.getElementById('notes').value = '';
+        
+        document.getElementById('statusMsg').innerHTML = "<span class='success'>✅ تم حفظ الزيارة بنجاح!</span>";
+    }
+
+    function resetBtn(btn, status) {
+        btn.disabled = false;
+        btn.innerText = "📍 حفظ الزيارة";
+    }
+
+    // ==========================================
+    // أكشن المدير (عرض الزيارات)
+    // ==========================================
+    async function loadVisits() {
+        const container = document.getElementById('visitsList');
+        container.innerHTML = "<p style='text-align:center'>جاري تحميل البيانات...</p>";
+        
+        const visits = await getVisits();
+        
+        if(visits.length === 0) {
+            container.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد زيارات مسجلة بعد.</p>";
+            return;
+        }
+
+        container.innerHTML = ""; // مسح كلمة تحميل
+        
+        // عرض الزيارات من الأحدث للأقدم
+        visits.forEach(v => {
+            let mapLink = '';
+            if(v.lat && v.lng) {
+                mapLink = `<a href="https://www.google.com/maps?q=${v.lat},${v.lng}" target="_blank" class="map-btn">📍 عرض موقع الزيارة على الخريطة</a>`;
+            }
+
+            container.innerHTML += `
+                <div class="card">
+                    <span class="time">${v.time} | بواسطة: ${v.rep}</span>
+                    <div class="place-name">${v.place_type} - ${v.place_name}</div>
+                    <div class="details">
+                        <strong>المسؤول:</strong> ${v.doctor_name} <br>
+                        <strong>الهاتف:</strong> ${v.phone || '---'} <br>
+                        <strong>العنوان:</strong> ${v.address || '---'} <br>
+                        <strong>الموقف:</strong> ${v.notes || 'لم يكتب ملاحظات'}
+                    </div>
+                    ${mapLink}
+                </div>
+            `;
+        });
+    }
+</script>
+</body>
+</html>
