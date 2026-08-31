@@ -2,55 +2,181 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>نظام متابعة المندوبين</title>
     <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: #f0f2f5; margin: 0; padding: 15px; }
-        .container { max-width: 500px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #1a73e8; margin-top: 0; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
-        button { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #1557b0; }
-        button:disabled { background: #ccc; }
+        * { 
+            box-sizing: border-box; 
+            font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body { 
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+            margin: 0; 
+            padding: 0 15px 30px 15px; /* شيلنا البادينج من فوق */
+            min-height: 100vh;
+        }
+        
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto 30px auto; 
+            background: #ffffff; 
+            padding: 30px 25px; 
+            border-radius: 0 0 20px 20px; /* عملنا الحواف مدببة من تحت بس */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.05); 
+            border-top: 5px solid #3b82f6; /* خط أزرق في الأعلى بدل المسافة */
+        }
+        
+        h2 { 
+            text-align: center; 
+            color: #1e293b; 
+            margin: 0 0 25px 0; 
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        input, select, textarea { 
+            width: 100%; 
+            padding: 16px 18px; 
+            margin: 0 0 18px 0; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 14px; 
+            font-size: 17px; 
+            color: #334155;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #3b82f6;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        textarea { 
+            resize: vertical; 
+            min-height: 120px;
+            line-height: 1.6;
+        }
+
+        button { 
+            width: 100%; 
+            padding: 18px; 
+            background: linear-gradient(45deg, #3b82f6, #2563eb); 
+            color: white; 
+            border: none; 
+            border-radius: 14px; 
+            font-size: 18px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            margin-top: 10px;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(37, 99, 235, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled { 
+            background: #cbd5e1; 
+            box-shadow: none;
+            transform: none;
+        }
         
         .admin-container { max-width: 800px; }
-        .header { background: #1a73e8; color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
-        .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-right: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .time { font-size: 12px; color: #888; display: block; margin-bottom: 5px; }
-        .place-name { font-size: 18px; font-weight: bold; color: #333; margin: 5px 0; }
-        .details { color: #555; line-height: 1.8; font-size: 14px; }
+        .header { 
+            background: linear-gradient(45deg, #1e293b, #334155); 
+            color: white; 
+            padding: 30px 25px; 
+            border-radius: 20px; 
+            text-align: center; 
+            margin-bottom: 25px;
+            box-shadow: 0 15px 30px rgba(30, 41, 59, 0.2);
+        }
+        .header h2 { color: white; margin-bottom: 15px; font-size: 26px; }
+        .header button { 
+            width: auto; 
+            padding: 12px 30px; 
+            background: white; 
+            color: #1e293b; 
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            font-size: 16px;
+        }
+        
+        .card { 
+            background: white; 
+            padding: 20px 25px; 
+            border-radius: 16px; 
+            margin-bottom: 20px; 
+            border-right: 6px solid #3b82f6; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03); 
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateX(-5px); }
+        
+        .time { 
+            font-size: 13px; 
+            color: #94a3b8; 
+            display: flex; 
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .place-name { 
+            font-size: 20px; 
+            font-weight: 800; 
+            color: #0f172a; 
+            margin: 0 0 15px 0; 
+        }
+        .details { 
+            color: #475569; 
+            line-height: 2; 
+            font-size: 15px; 
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+        }
+        .details strong { color: #1e293b; }
+        
         .hidden { display: none; }
-        #statusMsg { text-align: center; margin-top: 15px; font-weight: bold; }
-        .success { color: #0f9d58; }
-        .error { color: #ea4335; }
+        #statusMsg { 
+            text-align: center; 
+            margin-top: 20px; 
+            font-weight: 700; 
+            font-size: 16px;
+        }
+        .success { color: #059669; }
+        .error { color: #dc2626; }
     </style>
 </head>
 <body>
 
-<!-- اطار خفي عشان يبعت البيانات من غير ما يغير صفحة الموقع -->
-<iframe name="hiddenFrame" style="display: none;"></iframe>
-
-<!-- الفورم الخفي اللي بيبعت لجوجل شيت -->
-<form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbwfQ14ZP-3dspsT4fhN9A9KxomvRUZbm6SVKkJ-tX8Jy-aqjABgTTFnSxLRSCqeQaM/exec" method="POST" target="hiddenFrame">
-    <input type="text" name="time">
-    <input type="text" name="rep">
-    <input type="text" name="place_type">
-    <input type="text" name="place_name">
-    <input type="text" name="doctor_name">
-    <input type="text" name="phone">
-    <input type="text" name="address">
-    <input type="text" name="notes">
-</form>
+<!-- حطيت الفورم المخفي في ديف عشان يضمن متظهرش أي سطر فاضي -->
+<div style="display: none; height: 0; overflow: hidden;">
+    <iframe name="hiddenFrame"></iframe>
+    <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbwfQ14ZP-3dspsT4fhN9A9KxomvRUZbm6SVKkJ-tX8Jy-aqjABgTTFnSxLRSCqeQaM/exec" method="POST" target="hiddenFrame">
+        <input type="text" name="time">
+        <input type="text" name="rep">
+        <input type="text" name="place_type">
+        <input type="text" name="place_name">
+        <input type="text" name="doctor_name">
+        <input type="text" name="phone">
+        <input type="text" name="address">
+        <input type="text" name="notes">
+    </form>
+</div>
 
 <!-- ================= شاشة المندوب ================= -->
 <div id="repView" class="container">
-    <h2>تسجيل زيارة جديدة</h2>
+    <h2>📝 تسجيل زيارة جديدة</h2>
     
-    <input type="text" id="repName" placeholder="اسمك (مثال: أحمد محمود)">
+    <input type="text" id="repName" placeholder="اسم المندوب">
     
     <select id="placeType">
-        <option value="عيادة">عيادة</option>
+        <option value="عيادة">عيادة طبية</option>
         <option value="صيدلية">صيدلية</option>
         <option value="مركز تجميل">مركز تجميل</option>
         <option value="مستشفى">مستشفى</option>
@@ -58,10 +184,10 @@
 
     <input type="text" id="placeName" placeholder="اسم المكان (مثال: عيادة دكتور أحمد)" required>
     <input type="text" id="doctorName" placeholder="اسم الدكتور / المسؤول" required>
-    <input type="tel" id="phone" placeholder="رقم الموبايل">
-    <input type="text" id="address" placeholder="العنوان">
+    <input type="tel" id="phone" placeholder="رقم الهاتف" inputmode="numeric">
+    <input type="text" id="address" placeholder="العنوان التفصيلي">
     
-    <textarea id="notes" rows="4" placeholder="ماذا تم عمله مع العميل؟"></textarea>
+    <textarea id="notes" rows="4" placeholder="ملاحظات / ماذا تم عمله مع العميل؟"></textarea>
 
     <button id="submitBtn" onclick="submitVisit()">حفظ الزيارة</button>
     <div id="statusMsg"></div>
@@ -70,8 +196,8 @@
 <!-- ================= شاشة المدير ================= -->
 <div id="adminView" class="container admin-container hidden">
     <div class="header">
-        <h2 style="margin:0; color:white;">لوحة تحكم المدير</h2>
-        <button onclick="loadVisits()" style="width:auto; margin-top:15px; background:white; color:#1a73e8;">تحديث البيانات</button>
+        <h2>لوحة تحكم المدير</h2>
+        <button onclick="loadVisits()">تحديث الآن 🔄</button>
     </div>
     <div id="visitsList"></div>
 </div>
@@ -113,7 +239,6 @@
         btn.innerText = "جاري الحفظ...";
         status.innerHTML = "";
 
-        // نقل البيانات من الخانات الظاهرة للخانات الخفية
         document.querySelector('#hiddenForm [name="time"]').value = new Date().toLocaleString('ar-EG');
         document.querySelector('#hiddenForm [name="rep"]').value = repName;
         document.querySelector('#hiddenForm [name="place_type"]').value = document.getElementById('placeType').value;
@@ -123,10 +248,8 @@
         document.querySelector('#hiddenForm [name="address"]').value = document.getElementById('address').value;
         document.querySelector('#hiddenForm [name="notes"]').value = document.getElementById('notes').value;
 
-        // إرسال الفورم بشكل صامت
         document.getElementById('hiddenForm').submit();
 
-        // تفريغ الخانات الظاهرة
         document.getElementById('placeName').value = '';
         document.getElementById('doctorName').value = '';
         document.getElementById('phone').value = '';
@@ -143,12 +266,12 @@
 
     async function loadVisits() {
         const container = document.getElementById('visitsList');
-        container.innerHTML = "<p style='text-align:center'>جاري تحميل البيانات...</p>";
+        container.innerHTML = "<p style='text-align:center; color:#64748b; font-size: 16px;'>جاري تحميل البيانات...</p>";
         
         const visits = await getVisits();
         
         if(visits.length === 0) {
-            container.innerHTML = "<p style='text-align:center; color:#888;'>لا توجد زيارات مسجلة بعد.</p>";
+            container.innerHTML = "<p style='text-align:center; color:#94a3b8; padding: 40px 0; font-size: 17px;'>لا توجد زيارات مسجلة حتى الآن.</p>";
             return;
         }
 
@@ -157,7 +280,10 @@
         visits.forEach(v => {
             container.innerHTML += `
                 <div class="card">
-                    <span class="time">${v['التاريخ']} | بواسطة: ${v['المندوب']}</span>
+                    <div class="time">
+                        <span>📅 ${v['التاريخ']}</span>
+                        <span>👨‍💼 ${v['المندوب']}</span>
+                    </div>
                     <div class="place-name">${v['نوع المكان']} - ${v['اسم المكان']}</div>
                     <div class="details">
                         <strong>المسؤول:</strong> ${v['الدكتور']} <br>
