@@ -99,7 +99,6 @@
         btn.innerText = "جاري الحفظ...";
         status.innerHTML = "";
 
-        // إرسال البيانات مباشرة من غير GPS
         await sendRepData(repName);
         resetBtn(btn);
     }
@@ -119,11 +118,12 @@
         localStorage.setItem('repName', repName);
 
         try {
+            // إرسال البيانات بتخطي حاجز الحماية (no-cors)
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                redirect: 'follow',
+                mode: 'no-cors', 
                 headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(newVisit)
             });
@@ -136,7 +136,7 @@
             
             document.getElementById('statusMsg').innerHTML = "<span class='success'>✅ تم حفظ الزيارة بنجاح!</span>";
         } catch (e) {
-            document.getElementById('statusMsg').innerHTML = "<span class='error'>حدث خطأ في الاتصال، حاول مرة أخرى.</span>";
+            document.getElementById('statusMsg').innerHTML = "<span class='error'>حدث خطأ في الإنترنت.</span>";
         }
     }
 
