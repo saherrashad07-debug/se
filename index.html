@@ -28,6 +28,21 @@
 </head>
 <body>
 
+<!-- اطار خفي عشان يبعت البيانات من غير ما يغير صفحة الموقع -->
+<iframe name="hiddenFrame" style="display: none;"></iframe>
+
+<!-- الفورم الخفي اللي بيبعت لجوجل شيت -->
+<form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbwfQ14ZP-3dspsT4fhN9A9KxomvRUZbm6SVKkJ-tX8Jy-aqjABgTTFnSxLRSCqeQaM/exec" method="POST" target="hiddenFrame">
+    <input type="text" name="time">
+    <input type="text" name="rep">
+    <input type="text" name="place_type">
+    <input type="text" name="place_name">
+    <input type="text" name="doctor_name">
+    <input type="text" name="phone">
+    <input type="text" name="address">
+    <input type="text" name="notes">
+</form>
+
 <!-- ================= شاشة المندوب ================= -->
 <div id="repView" class="container">
     <h2>تسجيل زيارة جديدة</h2>
@@ -62,7 +77,6 @@
 </div>
 
 <script>
-    // لينك جوجل شيت بتاعك
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfQ14ZP-3dspsT4fhN9A9KxomvRUZbm6SVKkJ-tX8Jy-aqjABgTTFnSxLRSCqeQaM/exec";
 
     window.onload = () => {
@@ -88,7 +102,7 @@
         }
     }
 
-    async function submitVisit() {
+    function submitVisit() {
         const btn = document.getElementById('submitBtn');
         const status = document.getElementById('statusMsg');
         const repName = document.getElementById('repName').value;
@@ -99,48 +113,30 @@
         btn.innerText = "جاري الحفظ...";
         status.innerHTML = "";
 
-        await sendRepData(repName);
-        resetBtn(btn);
-    }
+        // نقل البيانات من الخانات الظاهرة للخانات الخفية
+        document.querySelector('#hiddenForm [name="time"]').value = new Date().toLocaleString('ar-EG');
+        document.querySelector('#hiddenForm [name="rep"]').value = repName;
+        document.querySelector('#hiddenForm [name="place_type"]').value = document.getElementById('placeType').value;
+        document.querySelector('#hiddenForm [name="place_name"]').value = document.getElementById('placeName').value;
+        document.querySelector('#hiddenForm [name="doctor_name"]').value = document.getElementById('doctorName').value;
+        document.querySelector('#hiddenForm [name="phone"]').value = document.getElementById('phone').value;
+        document.querySelector('#hiddenForm [name="address"]').value = document.getElementById('address').value;
+        document.querySelector('#hiddenForm [name="notes"]').value = document.getElementById('notes').value;
 
-    async function sendRepData(repName) {
-        const newVisit = {
-            time: new Date().toLocaleString('ar-EG'),
-            rep: repName,
-            place_type: document.getElementById('placeType').value,
-            place_name: document.getElementById('placeName').value,
-            doctor_name: document.getElementById('doctorName').value,
-            phone: document.getElementById('phone').value,
-            address: document.getElementById('address').value,
-            notes: document.getElementById('notes').value
-        };
+        // إرسال الفورم بشكل صامت
+        document.getElementById('hiddenForm').submit();
 
+        // تفريغ الخانات الظاهرة
+        document.getElementById('placeName').value = '';
+        document.getElementById('doctorName').value = '';
+        document.getElementById('phone').value = '';
+        document.getElementById('address').value = '';
+        document.getElementById('notes').value = '';
+        
         localStorage.setItem('repName', repName);
 
-        try {
-            // إرسال البيانات بتخطي حاجز الحماية (no-cors)
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors', 
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(newVisit)
-            });
-            
-            document.getElementById('placeName').value = '';
-            document.getElementById('doctorName').value = '';
-            document.getElementById('phone').value = '';
-            document.getElementById('address').value = '';
-            document.getElementById('notes').value = '';
-            
-            document.getElementById('statusMsg').innerHTML = "<span class='success'>✅ تم حفظ الزيارة بنجاح!</span>";
-        } catch (e) {
-            document.getElementById('statusMsg').innerHTML = "<span class='error'>حدث خطأ في الإنترنت.</span>";
-        }
-    }
-
-    function resetBtn(btn) {
+        status.innerHTML = "<span class='success'>✅ تم حفظ الزيارة بنجاح!</span>";
+        
         btn.disabled = false;
         btn.innerText = "حفظ الزيارة";
     }
