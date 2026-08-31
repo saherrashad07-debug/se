@@ -65,15 +65,10 @@
 
 <script>
     // ==========================================
-    // إعدادات قاعدة البيانات (Pantry Cloud)
-    // لو عملت الخطوة الأولى، بدل الـ ID ده بـ ID بتاعك
-    // لو مش عاملها، ده ID تجريبي هيشغل معاك الموقع وتقدر تجرب عليه
+    // لينك جوجل شيت بتاعك (متغيره خالص)
     // ==========================================
-    const PANTRY_ID = "demo_pantry_id_123"; 
-    const BASKET_NAME = "sales_visits_2024";
-    const PANTRY_URL = `https://getpantry.cloud/apiv1/pantry/${PANTRY_ID}/basket/${BASKET_NAME}`;
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwfQ14ZP-3dspsT4fhN9A9KxomvRUZbm6SVKkJ-tX8Jy-aqjABgTTFnSxLRSCqeQaM/exec";
 
-    // تحديد أي واجهة تظهر بناءً على اللينك
     window.onload = () => {
         if (window.location.hash === '#admin') {
             document.getElementById('repView').classList.add('hidden');
@@ -82,36 +77,25 @@
         } else {
             document.getElementById('repView').classList.remove('hidden');
             document.getElementById('adminView').classList.add('hidden');
-            // حفظ اسم المندوب لو دخل قبل كده
             const savedName = localStorage.getItem('repName');
             if(savedName) document.getElementById('repName').value = savedName;
         }
     };
 
-    // جلب البيانات من السيرفر
+    // جلب البيانات من الإكسل
     async function getVisits() {
         try {
-            const res = await fetch(PANTTRY_URL);
+            const res = await fetch(GOOGLE_SCRIPT_URL);
             if(!res.ok) return [];
-            const data = await res.json();
-            return data.visits || [];
+            return await res.json();
         } catch (e) {
             console.error("Error fetching data", e);
             return [];
         }
     }
 
-    // حفظ البيانات في السيرفر
-    async function saveVisits(visitsArray) {
-        await fetch(PANTRY_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ visits: visitsArray })
-        });
-    }
-
     // ==========================================
-    // أكشن المندوب (إرسال الزيارة)
+    // أكشن المندوب
     // ==========================================
     async function submitVisit() {
         const btn = document.getElementById('submitBtn');
@@ -124,7 +108,6 @@
         btn.innerText = "جاري تحديد الموقع...";
         status.innerHTML = "";
 
-        // أخذ الـ GPS الخفي
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 await sendRepData(position.coords.latitude, position.coords.longitude, repName);
@@ -140,7 +123,6 @@
 
     async function sendRepData(lat, lng, repName) {
         const newVisit = {
-            id: Date.now(),
             time: new Date().toLocaleString('ar-EG'),
             rep: repName,
             place_type: document.getElementById('placeType').value,
@@ -153,21 +135,22 @@
             lng: lng
         };
 
-        // حفظ اسم المندوب للمرة الجاية
         localStorage.setItem('repName', repName);
 
-        let allVisits = await getVisits();
-        allVisits.unshift(newVisit); // ضيف الزيارة الجديدة في الأول
-        await saveVisits(allVisits);
+        // إرسال البيانات لجوجل شيت
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(newVisit)
+        });
         
-        // مسح الخانات
+        // مسح الخانات بعد الحفظ
         document.getElementById('placeName').value = '';
         document.getElementById('doctorName').value = '';
         document.getElementById('phone').value = '';
         document.getElementById('address').value = '';
         document.getElementById('notes').value = '';
         
-        document.getElementById('statusMsg').innerHTML = "<span class='success'>✅ تم حفظ الزيارة بنجاح!</span>";
+        document.getElementById('statusMsg').innerHTML = "<span class='success'>✅ تم حفظ الزيارة في الإكسل بنجاح!</span>";
     }
 
     function resetBtn(btn, status) {
@@ -176,11 +159,11 @@
     }
 
     // ==========================================
-    // أكشن المدير (عرض الزيارات)
+    // أكشن المدير
     // ==========================================
     async function loadVisits() {
         const container = document.getElementById('visitsList');
-        container.innerHTML = "<p style='text-align:center'>جاري تحميل البيانات...</p>";
+        container.innerHTML = "<p style='text-align:center'>جاري تحميل البيانات من الإكسل...</p>";
         
         const visits = await getVisits();
         
@@ -189,24 +172,24 @@
             return;
         }
 
-        container.innerHTML = ""; // مسح كلمة تحميل
+        container.innerHTML = "";
         
-        // عرض الزيارات من الأحدث للأقدم
+        // الأعمدة في الإكسل بالعربي، فهنستخدم أسمائهم في العرض
         visits.forEach(v => {
             let mapLink = '';
-            if(v.lat && v.lng) {
-                mapLink = `<a href="https://www.google.com/maps?q=${v.lat},${v.lng}" target="_blank" class="map-btn">📍 عرض موقع الزيارة على الخريطة</a>`;
+            if(v['رابط الموقع'] && v['رابط الموقع'] !== "") {
+                mapLink = `<a href="${v['رابط الموقع']}" target="_blank" class="map-btn">📍 عرض موقع الزيارة على الخريطة</a>`;
             }
 
             container.innerHTML += `
                 <div class="card">
-                    <span class="time">${v.time} | بواسطة: ${v.rep}</span>
-                    <div class="place-name">${v.place_type} - ${v.place_name}</div>
+                    <span class="time">${v['التاريخ']} | بواسطة: ${v['المندوب']}</span>
+                    <div class="place-name">${v['نوع المكان']} - ${v['اسم المكان']}</div>
                     <div class="details">
-                        <strong>المسؤول:</strong> ${v.doctor_name} <br>
-                        <strong>الهاتف:</strong> ${v.phone || '---'} <br>
-                        <strong>العنوان:</strong> ${v.address || '---'} <br>
-                        <strong>الموقف:</strong> ${v.notes || 'لم يكتب ملاحظات'}
+                        <strong>المسؤول:</strong> ${v['الدكتور']} <br>
+                        <strong>الهاتف:</strong> ${v['التليفون'] || '---'} <br>
+                        <strong>العنوان:</strong> ${v['العنوان'] || '---'} <br>
+                        <strong>الموقف:</strong> ${v['الملاحظات'] || 'لم يكتب ملاحظات'}
                     </div>
                     ${mapLink}
                 </div>
