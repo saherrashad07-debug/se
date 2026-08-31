@@ -14,14 +14,12 @@
         button:hover { background: #1557b0; }
         button:disabled { background: #ccc; }
         
-        /* تنسيق صفحة المدير */
         .admin-container { max-width: 800px; }
         .header { background: #1a73e8; color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
         .card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-right: 5px solid #1a73e8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .time { font-size: 12px; color: #888; display: block; margin-bottom: 5px; }
         .place-name { font-size: 18px; font-weight: bold; color: #333; margin: 5px 0; }
         .details { color: #555; line-height: 1.8; font-size: 14px; }
-        .map-btn { display: inline-block; margin-top: 10px; padding: 6px 12px; background: #ea4335; color: white; text-decoration: none; border-radius: 5px; font-size: 13px; }
         .hidden { display: none; }
         #statusMsg { text-align: center; margin-top: 15px; font-weight: bold; }
         .success { color: #0f9d58; }
@@ -50,7 +48,7 @@
     
     <textarea id="notes" rows="4" placeholder="ماذا تم عمله مع العميل؟"></textarea>
 
-    <button id="submitBtn" onclick="submitVisit()">📍 حفظ الزيارة</button>
+    <button id="submitBtn" onclick="submitVisit()">حفظ الزيارة</button>
     <div id="statusMsg"></div>
 </div>
 
@@ -98,26 +96,15 @@
         if(!repName) { status.innerHTML = "<span class='error'>من فضلك اكتب اسمك أولاً</span>"; return; }
 
         btn.disabled = true;
-        btn.innerText = "جاري تحديد الموقع...";
+        btn.innerText = "جاري الحفظ...";
         status.innerHTML = "";
 
-        // طلب الموقع مع timeout سريع (8 ثواني)
-        navigator.geolocation.getCurrentPosition(
-            async (position) => {
-                await sendRepData(position.coords.latitude, position.coords.longitude, repName);
-                resetBtn(btn);
-            },
-            async (error) => {
-                // لو حصل أي مشكلة في الـ GPS
-                status.innerHTML = "<span class='error'>تعذر تحديد الموقع، جاري الحفظ بدون موقع...</span>";
-                await sendRepData(null, null, repName);
-                resetBtn(btn);
-            },
-            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-        );
+        // إرسال البيانات مباشرة من غير GPS
+        await sendRepData(repName);
+        resetBtn(btn);
     }
 
-    async function sendRepData(lat, lng, repName) {
+    async function sendRepData(repName) {
         const newVisit = {
             time: new Date().toLocaleString('ar-EG'),
             rep: repName,
@@ -126,9 +113,7 @@
             doctor_name: document.getElementById('doctorName').value,
             phone: document.getElementById('phone').value,
             address: document.getElementById('address').value,
-            notes: document.getElementById('notes').value,
-            lat: lat,
-            lng: lng
+            notes: document.getElementById('notes').value
         };
 
         localStorage.setItem('repName', repName);
@@ -136,9 +121,9 @@
         try {
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                redirect: 'follow', // بيمنع التعليق في الموبايل
+                redirect: 'follow',
                 headers: {
-                    'Content-Type': 'text/plain;charset=utf-8', // بيمنع أخطاء الكورس
+                    'Content-Type': 'text/plain;charset=utf-8',
                 },
                 body: JSON.stringify(newVisit)
             });
@@ -157,7 +142,7 @@
 
     function resetBtn(btn) {
         btn.disabled = false;
-        btn.innerText = "📍 حفظ الزيارة";
+        btn.innerText = "حفظ الزيارة";
     }
 
     async function loadVisits() {
@@ -174,11 +159,6 @@
         container.innerHTML = "";
         
         visits.forEach(v => {
-            let mapLink = '';
-            if(v['رابط الموقع'] && v['رابط الموقع'] !== "") {
-                mapLink = `<a href="${v['رابط الموقع']}" target="_blank" class="map-btn">📍 عرض موقع الزيارة على الخريطة</a>`;
-            }
-
             container.innerHTML += `
                 <div class="card">
                     <span class="time">${v['التاريخ']} | بواسطة: ${v['المندوب']}</span>
@@ -189,7 +169,6 @@
                         <strong>العنوان:</strong> ${v['العنوان'] || '---'} <br>
                         <strong>الموقف:</strong> ${v['الملاحظات'] || 'لم يكتب ملاحظات'}
                     </div>
-                    ${mapLink}
                 </div>
             `;
         });
