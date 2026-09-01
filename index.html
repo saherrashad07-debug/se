@@ -13,7 +13,7 @@
         body { 
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
             margin: 0; 
-            padding: 0 15px 30px 15px; /* شيلنا البادينج من فوق */
+            padding: 0 15px 30px 15px; 
             min-height: 100vh;
         }
         
@@ -22,9 +22,9 @@
             margin: 0 auto 30px auto; 
             background: #ffffff; 
             padding: 30px 25px; 
-            border-radius: 0 0 20px 20px; /* عملنا الحواف مدببة من تحت بس */
+            border-radius: 0 0 20px 20px; 
             box-shadow: 0 15px 35px rgba(0,0,0,0.05); 
-            border-top: 5px solid #3b82f6; /* خط أزرق في الأعلى بدل المسافة */
+            border-top: 5px solid #3b82f6; 
         }
         
         h2 { 
@@ -154,7 +154,6 @@
 </head>
 <body>
 
-<!-- حطيت الفورم المخفي في ديف عشان يضمن متظهرش أي سطر فاضي -->
 <div style="display: none; height: 0; overflow: hidden;">
     <iframe name="hiddenFrame"></iframe>
     <form id="hiddenForm" action="https://script.google.com/macros/s/AKfycbwfQ14ZP-3dspsT4fhN9A9KxomvRUZbm6SVKkJ-tX8Jy-aqjABgTTFnSxLRSCqeQaM/exec" method="POST" target="hiddenFrame">
@@ -182,12 +181,12 @@
         <option value="مستشفى">مستشفى</option>
     </select>
 
-    <input type="text" id="placeName" placeholder="اسم المكان (مثال: عيادة دكتور أحمد)" required>
+    <input type="text" id="placeName" placeholder="اسم المكان" required>
     <input type="text" id="doctorName" placeholder="اسم الدكتور / المسؤول" required>
     <input type="tel" id="phone" placeholder="رقم الهاتف" inputmode="numeric">
     <input type="text" id="address" placeholder="العنوان التفصيلي">
     
-    <textarea id="notes" rows="4" placeholder="ملاحظات / ماذا تم عمله مع العميل؟"></textarea>
+    <textarea id="notes" rows="4" placeholder="ملاحظات"></textarea>
 
     <button id="submitBtn" onclick="submitVisit()">حفظ الزيارة</button>
     <div id="statusMsg"></div>
