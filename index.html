@@ -76,9 +76,7 @@
             transform: translateY(-2px);
             box-shadow: 0 12px 25px rgba(37, 99, 235, 0.4);
         }
-        button:active {
-            transform: translateY(0);
-        }
+        button:active { transform: translateY(0); }
         button:disabled { 
             background: #cbd5e1; 
             box-shadow: none;
@@ -106,6 +104,25 @@
             font-size: 16px;
         }
         
+        #searchInput {
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            margin-bottom: 30px;
+        }
+
+        .date-header {
+            background: #e2e8f0;
+            color: #1e293b;
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin: 30px 0 15px 0;
+            font-weight: 800;
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .card { 
             background: white; 
             padding: 20px 25px; 
@@ -117,20 +134,23 @@
         }
         .card:hover { transform: translateX(-5px); }
         
-        .time { 
-            font-size: 13px; 
-            color: #94a3b8; 
-            display: flex; 
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
         .place-name { 
             font-size: 20px; 
             font-weight: 800; 
             color: #0f172a; 
             margin: 0 0 15px 0; 
+            display: flex;
+            justify-content: space-between;
         }
+        .rep-badge {
+            font-size: 13px;
+            background: #eff6ff;
+            color: #2563eb;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        
         .details { 
             color: #475569; 
             line-height: 2; 
@@ -198,6 +218,9 @@
         <h2>لوحة تحكم المدير</h2>
         <button onclick="loadVisits()">تحديث الآن 🔄</button>
     </div>
+    
+    <input type="text" id="searchInput" placeholder="🔍 بحث باسم العميل أو الدكتور..." oninput="loadVisits()">
+    
     <div id="visitsList"></div>
 </div>
 
@@ -231,8 +254,15 @@
         const btn = document.getElementById('submitBtn');
         const status = document.getElementById('statusMsg');
         const repName = document.getElementById('repName').value;
+        const phone = document.getElementById('phone').value.trim();
         
         if(!repName) { status.innerHTML = "<span class='error'>من فضلك اكتب اسمك أولاً</span>"; return; }
+
+        // التحقق من رقم الهاتف (لازم يكون 11 رقم بالظبط لو مكتوب حاجة)
+        if(phone !== '' && phone.length !== 11) {
+            status.innerHTML = "<span class='error'>⚠️ رقم الهاتف يجب أن يكون 11 رقم بالضبط</span>";
+            return;
+        }
 
         btn.disabled = true;
         btn.innerText = "جاري الحفظ...";
@@ -243,7 +273,7 @@
         document.querySelector('#hiddenForm [name="place_type"]').value = document.getElementById('placeType').value;
         document.querySelector('#hiddenForm [name="place_name"]').value = document.getElementById('placeName').value;
         document.querySelector('#hiddenForm [name="doctor_name"]').value = document.getElementById('doctorName').value;
-        document.querySelector('#hiddenForm [name="phone"]').value = document.getElementById('phone').value;
+        document.querySelector('#hiddenForm [name="phone"]').value = phone;
         document.querySelector('#hiddenForm [name="address"]').value = document.getElementById('address').value;
         document.querySelector('#hiddenForm [name="notes"]').value = document.getElementById('notes').value;
 
@@ -265,33 +295,55 @@
 
     async function loadVisits() {
         const container = document.getElementById('visitsList');
+        const searchTerm = document.getElementById('searchInput').value.trim();
         container.innerHTML = "<p style='text-align:center; color:#64748b; font-size: 16px;'>جاري تحميل البيانات...</p>";
         
-        const visits = await getVisits();
+        let visits = await getVisits();
         
+        if (searchTerm) {
+            visits = visits.filter(v => 
+                v['اسم المكان'].includes(searchTerm) || 
+                v['الدكتور'].includes(searchTerm)
+            );
+        }
+
         if(visits.length === 0) {
-            container.innerHTML = "<p style='text-align:center; color:#94a3b8; padding: 40px 0; font-size: 17px;'>لا توجد زيارات مسجلة حتى الآن.</p>";
+            container.innerHTML = searchTerm ? 
+                "<p style='text-align:center; color:#94a3b8; padding: 40px 0; font-size: 17px;'>لا توجد نتائج مطابقة للبحث.</p>" :
+                "<p style='text-align:center; color:#94a3b8; padding: 40px 0; font-size: 17px;'>لا توجد زيارات مسجلة حتى الآن.</p>";
             return;
         }
 
+        let groupedByDate = {};
+        visits.forEach(v => {
+            let dateStr = v['التاريخ'];
+            if (!groupedByDate[dateStr]) {
+                groupedByDate[dateStr] = [];
+            }
+            groupedByDate[dateStr].push(v);
+        });
+
         container.innerHTML = "";
         
-        visits.forEach(v => {
-            container.innerHTML += `
-                <div class="card">
-                    <div class="time">
-                        <span>📅 ${v['التاريخ']}</span>
-                        <span>👨‍💼 ${v['المندوب']}</span>
+        Object.keys(groupedByDate).forEach(date => {
+            container.innerHTML += `<div class="date-header">📅 ${date}</div>`;
+            
+            groupedByDate[date].forEach(v => {
+                container.innerHTML += `
+                    <div class="card">
+                        <div class="place-name">
+                            <span>${v['نوع المكان']} - ${v['اسم المكان']}</span>
+                            <span class="rep-badge">${v['المندوب']}</span>
+                        </div>
+                        <div class="details">
+                            <strong>المسؤول:</strong> ${v['الدكتور']} <br>
+                            <strong>الهاتف:</strong> ${v['التليفون'] || '---'} <br>
+                            <strong>العنوان:</strong> ${v['العنوان'] || '---'} <br>
+                            <strong>الموقف:</strong> ${v['الملاحظات'] || 'لم يكتب ملاحظات'}
+                        </div>
                     </div>
-                    <div class="place-name">${v['نوع المكان']} - ${v['اسم المكان']}</div>
-                    <div class="details">
-                        <strong>المسؤول:</strong> ${v['الدكتور']} <br>
-                        <strong>الهاتف:</strong> ${v['التليفون'] || '---'} <br>
-                        <strong>العنوان:</strong> ${v['العنوان'] || '---'} <br>
-                        <strong>الموقف:</strong> ${v['الملاحظات'] || 'لم يكتب ملاحظات'}
-                    </div>
-                </div>
-            `;
+                `;
+            });
         });
     }
 </script>
